@@ -19,8 +19,8 @@ typedef struct ssd1306
 	{
 	uint8_t bus_type;
 	uint8_t i2c_addr;
-	pin_t spi_reset;
-	pin_t spi_dc;
+	pin_t   spi_reset;
+	pin_t   spi_dc;
 
 //	int oled_width;
 //	int oled_height;
@@ -56,9 +56,9 @@ extern size_t display_buffer_size;
 #define SSD1306_FONT_6X14  0x02
 
 // prototypes
-void ssd1306_init(ssd1306_t *dev);
 void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
-void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t start_seg, uint8_t end_page, uint8_t end_seg);
+void ssd1306_init(ssd1306_t *dev);
+void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
 
 void ssd1306_clear_all(void);
 void ssd1306_area_set(uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);

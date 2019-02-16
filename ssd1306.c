@@ -46,6 +46,28 @@ const uint8_t PROGMEM cmd_tx[] =
 
 
 //----------------------------------------------------------------------------------------------------
+// send to display
+//----------------------------------------------------------------------------------------------------
+void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
+	{
+	if (dev->bus_type == SSD1306_BUS_SPI)
+		{
+		// send via spi bus
+		if (dc_flag == SSD1306_DC_DATA)
+			_SFR_IO8(dev->spi_dc.avr_pin.port_reg) |= dev->spi_dc.avr_pin.pin_mask;            // data - set dc pin
+		else
+			_SFR_IO8(dev->spi_dc.avr_pin.port_reg) &= (uint8_t)~dev->spi_dc.avr_pin.pin_mask;  // command - clear dc pin
+		spi_write(data, size);
+		}
+	else
+		{
+		// send via i2c bus
+		i2c_master_write(dev->i2c_addr, &dc_flag, 1, I2C_SEQ_START); // send D/C byte
+		i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
+		}
+	}
+
+//----------------------------------------------------------------------------------------------------
 // initialize display
 //----------------------------------------------------------------------------------------------------
 void ssd1306_init(ssd1306_t *dev)
@@ -74,30 +96,9 @@ void ssd1306_init(ssd1306_t *dev)
 	}
 
 //----------------------------------------------------------------------------------------------------
-// send to display
-//----------------------------------------------------------------------------------------------------
-void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
-	{
-	if (dev->bus_type == SSD1306_BUS_SPI)
-		{
-		// send via spi bus
-		if (dc_flag == SSD1306_DC_DATA)
-			_SFR_IO8(dev->spi_dc.avr_pin.port_reg) |= dev->spi_dc.avr_pin.pin_mask;            // data - set dc pin
-		else
-			_SFR_IO8(dev->spi_dc.avr_pin.port_reg) &= (uint8_t)~dev->spi_dc.avr_pin.pin_mask;  // command - clear dc pin
-		spi_write(data, size);
-		}
-	else
-		{
-		// send via i2c bus
-		i2c_master_write(dev->i2c_addr, &dc_flag, 1, I2C_SEQ_START); // send D/C byte
-		i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
-		}
-	}
-//----------------------------------------------------------------------------------------------------
 // send buffer to display
 //----------------------------------------------------------------------------------------------------
-void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t start_seg, uint8_t end_page, uint8_t end_seg)
+void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg)
 	{
 	// check limits
 	if (start_seg  > SSD1306_SEG_MAX ) return;
