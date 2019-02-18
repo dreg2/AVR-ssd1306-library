@@ -7,8 +7,16 @@
 
 #include "pin.h"
 
+// built-in fonts
 extern const uint8_t PROGMEM font5x7[];
 extern const uint8_t PROGMEM font6x14[];
+
+// display sizes
+#define SSD1306_OLED_WIDTH_MAX    128
+#define SSD1306_OLED_HEIGHT_MAX   64
+#define SSD1306_OLED_WIDTH_128    128
+#define SSD1306_OLED_HEIGHT_64    64
+#define SSD1306_OLED_HEIGHT_32    32
 
 // bus types
 #define SSD1306_BUS_I2C 0
@@ -19,31 +27,22 @@ typedef struct ssd1306
 	{
 	uint8_t bus_type;
 	uint8_t i2c_addr;
-	pin_t   spi_reset;
-	pin_t   spi_dc;
-
-//	int oled_width;
-//	int oled_height;
-//	int oled_pages;
-//	int oled_seg_max;
-//	int oled_page_max;
+	pin_t   reset_pin;
+	pin_t   dc_pin;
+	uint8_t oled_width;
+	uint8_t oled_height;
+	uint8_t oled_seg_max;
+	uint8_t oled_page_max;
 	} ssd1306_t;
-
-// oled size
-#define SSD1306_OLED_WIDTH    128
-#define SSD1306_OLED_HEIGHT    64
-#define SSD1306_OLED_PAGES    (SSD1306_OLED_HEIGHT / 8)
-#define SSD1306_SEG_MAX       (SSD1306_OLED_WIDTH - 1)
-#define SSD1306_PAGE_MAX      (SSD1306_OLED_PAGES - 1)
 
 // display buffer array
 union ssd1306_buffer
 	{
-	uint8_t dim_one[SSD1306_OLED_PAGES * SSD1306_OLED_WIDTH];       // dim_one dimensional buffer
-	uint8_t dim_two[SSD1306_OLED_PAGES] [SSD1306_OLED_WIDTH];       // dim_two dimensional buffer (row x col)
+	uint8_t dim_one[(SSD1306_OLED_HEIGHT_MAX / 8) * SSD1306_OLED_WIDTH_MAX]; // dim_one dimensional buffer
+	uint8_t dim_two[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX]; // dim_two dimensional buffer (row x col)
 	};
 
-extern union ssd1306_buffer display_buffer;
+extern union  ssd1306_buffer display_buffer;
 extern size_t display_buffer_size;
 
 
@@ -56,14 +55,14 @@ extern size_t display_buffer_size;
 #define SSD1306_FONT_6X14  0x02
 
 // prototypes
-void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
-void ssd1306_init(ssd1306_t *dev);
-void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
+void   ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
+int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr);
+void   ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
 
-void ssd1306_clear_all(void);
-void ssd1306_area_set(uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
-void ssd1306_pixel_set(uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
-void ssd1306_text(char *text, uint8_t pixel_x, uint8_t pixel_y, uint8_t font);
+void   ssd1306_clear_all(void);
+void   ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
+void   ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
+void   ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, uint8_t font);
 
 // ssd1306 commands
 
