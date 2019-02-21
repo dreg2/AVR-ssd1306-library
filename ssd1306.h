@@ -56,7 +56,7 @@ extern size_t display_buffer_size;
 
 // prototypes
 void   ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
-int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr);
+int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr, uint8_t reset_pin, uint8_t dc_pin);
 void   ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
 
 void   ssd1306_clear_all(void);

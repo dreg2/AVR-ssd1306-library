@@ -26,8 +26,7 @@ int main(void)
 
 	// initialize i2c device
 	ssd1306_t dev_i2c;
-	ssd1306_init(&dev_i2c, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_I2C, SSD1306_SLAVE_ADDR);
-//	ssd1306_init(&dev_i2c, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_32, SSD1306_BUS_I2C, SSD1306_SLAVE_ADDR);
+	ssd1306_init(&dev_i2c, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_I2C, SSD1306_SLAVE_ADDR, PIN_NOT_USED, PIN_NOT_USED);
 	ssd1306_clear_all();
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	printf("ssd1306 i2c initialized\n");
@@ -40,11 +39,7 @@ int main(void)
 
 	// initialize spi device
 	ssd1306_t dev_spi;
-//	pin_init(&dev_spi.dc_pin,    PIN_B, PB0);
-	pin_init_ard(&dev_spi.dc_pin,    8);
-//	pin_init(&dev_spi.reset_pin, PIN_B, PB1);
-	pin_init_ard(&dev_spi.reset_pin, 9);
-	ssd1306_init(&dev_spi, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_SPI, 0x00);
+	ssd1306_init(&dev_spi, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_SPI, 0x00, PIN_B1, PIN_B0);
 	ssd1306_clear_all();
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	printf("ssd1306 spi initialized\n");

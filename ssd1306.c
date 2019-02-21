@@ -52,6 +52,10 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 	{
 	if (dev->bus_type == SSD1306_BUS_SPI)
 		{
+		// D/C pin required for spi
+		if (dev->dc_pin.valid_flag != PIN_VALID)
+			return;
+
 		// send via spi bus
 		if (dc_flag == SSD1306_DC_DATA)
 			_SFR_IO8(dev->dc_pin.port_reg) |= dev->dc_pin.pin_mask;            // data - set dc pin
@@ -70,20 +74,35 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 //----------------------------------------------------------------------------------------------------
 // initialize display
 //----------------------------------------------------------------------------------------------------
-int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr)
+int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr, uint8_t reset_pin, uint8_t dc_pin)
 	{
-	// fill in device info
-	dev->bus_type      = bus;
-	dev->i2c_addr      = addr;
+	// validate bus type
+	if ((dev->bus_type != SSD1306_BUS_I2C) && (dev->bus_type != SSD1306_BUS_SPI))
+		return -1;
+	dev->bus_type = bus;
 
-	// fill in size info
+	// validate and save i2c address
+	if (dev->bus_type == SSD1306_BUS_I2C)
+		{
+		if ((addr <= 0x07) || (addr == 0x78) || (addr == 0x7f))
+			return -1;
+		dev->i2c_addr = addr;
+		}
+
+	// validate and save size info
+	if ((height > SSD1306_OLED_HEIGHT_MAX) || (width > SSD1306_OLED_WIDTH_MAX))
+		return -1;
 	dev->oled_height   = height;
 	dev->oled_width    = width;
 	dev->oled_seg_max  = (uint8_t)(dev->oled_width - 1);
 	dev->oled_page_max = (uint8_t)((dev->oled_height / 8) - 1);
 
-	// init reset pin
-	if (dev->reset_pin.pin_reg != 0x00)
+	// intialize reset and D/C pins
+	pin_init_ard(&dev->reset_pin, reset_pin);
+	pin_init_ard(&dev->dc_pin, dc_pin);
+
+	// reset ssd1306
+	if (dev->reset_pin.valid_flag == PIN_VALID)
 		{
 		// set to output
 		_SFR_IO8(dev->reset_pin.ddr_reg)  |= dev->reset_pin.pin_mask;
@@ -97,6 +116,10 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 	// initialize spi device
 	if (dev->bus_type == SSD1306_BUS_SPI)
 		{
+		// D/C pin required for spi device
+		if (dev->dc_pin.valid_flag != PIN_VALID)
+			return -1;
+
 		// set d/c pin to output
 		_SFR_IO8(dev->dc_pin.ddr_reg) |= dev->dc_pin.pin_mask;
 		}
