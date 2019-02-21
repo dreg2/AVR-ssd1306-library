@@ -50,6 +50,10 @@ const uint8_t PROGMEM cmd_tx[] =
 //----------------------------------------------------------------------------------------------------
 void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
 	if (dev->bus_type == SSD1306_BUS_SPI)
 		{
 		// D/C pin required for spi
@@ -58,9 +62,9 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 
 		// send via spi bus
 		if (dc_flag == SSD1306_DC_DATA)
-			_SFR_IO8(dev->dc_pin.port_reg) |= dev->dc_pin.pin_mask;            // data - set dc pin
+			_SFR_IO8(dev->dc_pin.port_reg) |= dev->dc_pin.pin_mask;            // data - set D/C pin
 		else
-			_SFR_IO8(dev->dc_pin.port_reg) &= (uint8_t)~dev->dc_pin.pin_mask;  // command - clear dc pin
+			_SFR_IO8(dev->dc_pin.port_reg) &= (uint8_t)~dev->dc_pin.pin_mask;  // command - clear D/C pin
 		spi_write(data, size);
 		}
 	else
@@ -76,15 +80,18 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 //----------------------------------------------------------------------------------------------------
 int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr, uint8_t reset_pin, uint8_t dc_pin)
 	{
+	// set device to invalid
+	dev->valid_flag = DEV_INVALID;
+
 	// validate bus type
-	if ((dev->bus_type != SSD1306_BUS_I2C) && (dev->bus_type != SSD1306_BUS_SPI))
+	if ((bus != SSD1306_BUS_I2C) && (bus != SSD1306_BUS_SPI))
 		return -1;
 	dev->bus_type = bus;
 
 	// validate and save i2c address
 	if (dev->bus_type == SSD1306_BUS_I2C)
 		{
-		if ((addr <= 0x07) || (addr == 0x78) || (addr == 0x7f))
+		if ((addr <= 0x07) || (addr >= 0x78))
 			return -1;
 		dev->i2c_addr = addr;
 		}
@@ -124,6 +131,9 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 		_SFR_IO8(dev->dc_pin.ddr_reg) |= dev->dc_pin.pin_mask;
 		}
 
+	// set device to valid
+	dev->valid_flag = DEV_VALID;
+
 	// copy command list from flash 
 	uint8_t cmd_array[ARRAY_SIZE(cmd_tx)];
 	memcpy_P(cmd_array, &cmd_tx[0], ARRAY_SIZE(cmd_tx));
@@ -139,6 +149,10 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 //----------------------------------------------------------------------------------------------------
 void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg)
 	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
 	// check limits
 	if (start_seg  > dev->oled_seg_max ) return;
 	if (end_seg    > dev->oled_seg_max ) end_seg  = dev->oled_seg_max;
@@ -160,6 +174,10 @@ void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8
 //----------------------------------------------------------------------------------------------------
 void ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value)
 	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
 	// check limits
 	if ((pixel_x > dev->oled_width) || (pixel_y > dev->oled_height))
 		return;
@@ -190,6 +208,10 @@ void ssd1306_clear_all(void)
 //----------------------------------------------------------------------------------------------------
 void ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value)
 	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
 	// check limits
 	if (start_x > dev->oled_width-1)  return;
 	if (end_x   > dev->oled_width-1)  end_x   = (uint8_t)(dev->oled_width-1);
@@ -207,6 +229,10 @@ void ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t st
 //----------------------------------------------------------------------------------------------------
 void ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, uint8_t font)
 	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
 	const uint8_t *font_ptr;
 	uint8_t font_bytes;
 	uint8_t font_width;

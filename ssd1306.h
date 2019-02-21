@@ -22,9 +22,14 @@ extern const uint8_t PROGMEM font6x14[];
 #define SSD1306_BUS_I2C 0
 #define SSD1306_BUS_SPI 1
 
+// valid flag values
+#define DEV_VALID   0xFF
+#define DEV_INVALID 0xFE
+
 // display structure
 typedef struct ssd1306
 	{
+	uint8_t valid_flag;
 	uint8_t bus_type;
 	uint8_t i2c_addr;
 	pin_t   reset_pin;
