@@ -136,7 +136,7 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 
 	// copy command list from flash 
 	uint8_t cmd_array[ARRAY_SIZE(cmd_tx)];
-	memcpy_P(cmd_array, &cmd_tx[0], ARRAY_SIZE(cmd_tx));
+	memcpy_P(&cmd_array[0], &cmd_tx[0], ARRAY_SIZE(cmd_tx));
 
 	// send initialize commands to display
 	ssd1306_send(dev, &cmd_array[0], ARRAY_SIZE(cmd_tx), SSD1306_DC_CMD);
@@ -259,7 +259,7 @@ void ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, 
 		{
 		int font_index = (int)((*character) * font_bytes);
 		uint8_t work[font_bytes];
-		memcpy_P(work, &font_ptr[font_index], font_bytes);
+		memcpy_P(&work[0], &font_ptr[font_index], font_bytes);
 
 		// loop through character font bytes
 		for (uint8_t x = 0; x < font_width; x++)
