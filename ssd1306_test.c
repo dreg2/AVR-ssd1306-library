@@ -11,6 +11,13 @@
 
 #define SSD1306_SLAVE_ADDR          0x3C
 
+uint8_t bitmap_test[][8] =
+        {
+        {0x01, 0x07, 0x0F, 0x3F, 0x0F, 0x07, 0x01, 0x00},
+        {0x3F, 0x0F, 0x07, 0x01, 0x07, 0x0F, 0x3F, 0x00},
+        };
+
+
 int main(void)
 	{
 	__attribute__((unused))int option;
@@ -146,9 +153,19 @@ int main(void)
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
-	char text1[16];
 	ssd1306_clear_all();
 
+	printf("\nbitmap test 1\n");
+	ssd1306_bitmap(&dev_spi, bitmap_test[0], 8, 1, 10, 10);
+	ssd1306_bitmap(&dev_i2c, bitmap_test[0], 8, 1, 10, 10);
+	ssd1306_bitmap(&dev_spi, bitmap_test[1], 8, 1, 64, 32);
+	ssd1306_bitmap(&dev_i2c, bitmap_test[1], 8, 1, 64, 32);
+	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
+	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
+	option = getchar();
+
+	char text1[16];
+	ssd1306_clear_all();
 	printf("\ntext test 1\n");
 	snprintf(text1, 16, "Test 1.2.3.4.5.6.7.8");
 	ssd1306_text(&dev_i2c, text1,  0, 0, SSD1306_FONT_5X7);

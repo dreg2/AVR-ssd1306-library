@@ -62,9 +62,9 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 
 		// send via spi bus
 		if (dc_flag == SSD1306_DC_DATA)
-			_SFR_IO8(dev->dc_pin.port_reg) |= dev->dc_pin.pin_mask;            // data - set D/C pin
+			pin_state_set(&dev->dc_pin, PIN_OUT_HIGH);                         // data - set D/C pin
 		else
-			_SFR_IO8(dev->dc_pin.port_reg) &= (uint8_t)~dev->dc_pin.pin_mask;  // command - clear D/C pin
+			pin_state_set(&dev->dc_pin, PIN_OUT_LOW);                          // command - clear D/C pin
 		spi_write(data, size);
 		}
 	else
@@ -111,25 +111,15 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 	// reset ssd1306
 	if (dev->reset_pin.valid_flag == PIN_VALID)
 		{
-		// set to output
-		_SFR_IO8(dev->reset_pin.ddr_reg)  |= dev->reset_pin.pin_mask;
-
 		// pull reset low, wait 100 ms, pull reset high
-		_SFR_IO8(dev->reset_pin.port_reg) &= (uint8_t)~dev->reset_pin.pin_mask;
+		pin_state_set(&dev->reset_pin, PIN_OUT_LOW);
 		_delay_us(100);                // delay 100 us
-		_SFR_IO8(dev->reset_pin.port_reg) |= dev->reset_pin.pin_mask;
+		pin_state_set(&dev->reset_pin, PIN_OUT_HIGH);
 		}
 
-	// initialize spi device
-	if (dev->bus_type == SSD1306_BUS_SPI)
-		{
-		// D/C pin required for spi device
-		if (dev->dc_pin.valid_flag != PIN_VALID)
+	// D/C pin required for spi device
+	if (dev->bus_type == SSD1306_BUS_SPI && dev->dc_pin.valid_flag != PIN_VALID)
 			return -1;
-
-		// set d/c pin to output
-		_SFR_IO8(dev->dc_pin.ddr_reg) |= dev->dc_pin.pin_mask;
-		}
 
 	// set device to valid
 	dev->valid_flag = DEV_VALID;
@@ -225,9 +215,47 @@ void ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t st
 	}
 
 //----------------------------------------------------------------------------------------------------
+// map bitmap into display buffer
+//----------------------------------------------------------------------------------------------------
+void ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y)
+	{
+	// check for valid device
+	if (dev->valid_flag != DEV_VALID)
+		return;
+
+	// loop through bitmap bytes
+	for (uint8_t x = 0; x < bitmap_seg_size; x++)
+		{
+		uint8_t x_pos = (uint8_t)(start_pixel_x + x);
+
+		if (x_pos > (uint8_t)(dev->oled_width-1))
+			break;
+
+		// loop through bitmap pages
+		for (uint8_t i = 0; i < bitmap_page_size; i++)
+			{
+			uint8_t bitmap_byte = bitmap[x + (i*bitmap_seg_size)];
+
+			// loop through bits
+			for (uint8_t y = 0; y < 8; y++)
+				{
+				uint8_t y_pos = (uint8_t)(start_pixel_y + y + (i*8));
+
+				if (y_pos > dev->oled_height-1)
+					break;
+
+				// set pixel from bit
+				ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(bitmap_byte & (1 << y)));
+				}
+			}
+		}
+
+	}
+
+//----------------------------------------------------------------------------------------------------
 // map text into display buffer
 //----------------------------------------------------------------------------------------------------
-void ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, uint8_t font)
+void ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
@@ -235,62 +263,39 @@ void ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, 
 
 	const uint8_t *font_ptr;
 	uint8_t font_bytes;
-	uint8_t font_width;
-	uint8_t font_rows;
+	uint8_t font_segs;
+	uint8_t font_pages;
 
 	// set up font values
 	if (font == SSD1306_FONT_6X14)
 		{
-		font_ptr = &font6x14[0];
-		font_bytes  = 12;
-		font_width  = 6;
-		font_rows   = 2;
+		font_ptr   = &font6x14[0];
+		font_bytes = 12;
+		font_segs  = 6;
+		font_pages = 2;
 		}
 	else
 		{
-		font_ptr = &font5x7[0];
-		font_bytes  = 5;
-		font_width  = 5;
-		font_rows   = 1;
+		font_ptr   = &font5x7[0];
+		font_bytes = 5;
+		font_segs  = 5;
+		font_pages = 1;
 		}
 
 	// loop through string characters
 	for (char *character = text; (*character != '\0'); character++)
 		{
+		// get character font bytes from flash
 		int font_index = (int)((*character) * font_bytes);
 		uint8_t work[font_bytes];
 		memcpy_P(&work[0], &font_ptr[font_index], font_bytes);
 
-		// loop through character font bytes
-		for (uint8_t x = 0; x < font_width; x++)
-			{
-			uint8_t x_pos = (uint8_t)(pixel_x + x);
-
-			if (x_pos > (uint8_t)(dev->oled_width-1))
-				break;
-
-			// loop through font rows
-			for (uint8_t i = 0; i < font_rows; i++)
-				{
-				uint8_t font_byte = work[x + (i*font_width)];
-
-				// loop through bits
-				for (uint8_t y = 0; y < 8; y++)
-					{
-					uint8_t y_pos = (uint8_t)(pixel_y + y + (i*8));
-
-					if (y_pos > dev->oled_height-1)
-						break;
-
-					// set pixel from bit
-					ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(font_byte & (1 << y)));
-					}
-				}
-			}
+		// bitmap font into buffer
+		ssd1306_bitmap(dev, &work[0], font_segs, font_pages, start_pixel_x, start_pixel_y);
 
 		// increment to next character display position
-		pixel_x = (uint8_t)(pixel_x + font_width);
-		if (pixel_x > (uint8_t)(dev->oled_width-1))
+		start_pixel_x = (uint8_t)(start_pixel_x + font_segs);
+		if (start_pixel_x > (uint8_t)(dev->oled_width-1))
 			break;
 		}
 	}

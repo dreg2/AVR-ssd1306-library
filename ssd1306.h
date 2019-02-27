@@ -67,7 +67,8 @@ void   ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uin
 void   ssd1306_clear_all(void);
 void   ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
 void   ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
-void   ssd1306_text(ssd1306_t *dev, char *text, uint8_t pixel_x, uint8_t pixel_y, uint8_t font);
+void   ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y);
+void   ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font);
 
 // ssd1306 commands
 
