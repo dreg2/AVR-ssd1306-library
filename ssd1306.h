@@ -52,23 +52,23 @@ extern size_t display_buffer_size;
 
 
 // data/command select
-#define SSD1306_DC_CMD              0x00
-#define SSD1306_DC_DATA             0x40
+#define SSD1306_DC_CMD     0x00
+#define SSD1306_DC_DATA    0x40
 
 // included fonts
 #define SSD1306_FONT_5X7   0x01
 #define SSD1306_FONT_6X14  0x02
 
 // prototypes
-void   ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
+int8_t ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag);
 int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr, uint8_t reset_pin, uint8_t dc_pin);
-void   ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
+int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
 
 void   ssd1306_clear_all(void);
-void   ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
-void   ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
-void   ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y);
-void   ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font);
+int8_t ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
+int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
+int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y);
+int8_t ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font);
 
 // ssd1306 commands
 

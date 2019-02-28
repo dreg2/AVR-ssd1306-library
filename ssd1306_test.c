@@ -183,11 +183,15 @@ int main(void)
 	option = getchar();
 
 	printf("\narea test\n");
-	ssd1306_area_set(&dev_i2c, 16, 112, 8, 56, 0);
+	ssd1306_clear_all();
+	ssd1306_area_set(&dev_i2c, 32, 96, 16, 48, 1);
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
 	printf("\nend program\n");
+	ssd1306_clear_all();
+	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
+	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	return 0;
 	}

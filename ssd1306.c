@@ -48,17 +48,17 @@ const uint8_t PROGMEM cmd_tx[] =
 //----------------------------------------------------------------------------------------------------
 // send to display
 //----------------------------------------------------------------------------------------------------
-void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
+int8_t ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	if (dev->bus_type == SSD1306_BUS_SPI)
 		{
 		// D/C pin required for spi
 		if (dev->dc_pin.valid_flag != PIN_VALID)
-			return;
+			return -1;
 
 		// send via spi bus
 		if (dc_flag == SSD1306_DC_DATA)
@@ -73,6 +73,8 @@ void ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 		i2c_master_write(dev->i2c_addr, &dc_flag, 1, I2C_SEQ_START); // send D/C byte
 		i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
 		}
+
+	return 0;
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -129,7 +131,8 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 	memcpy_P(&cmd_array[0], &cmd_tx[0], ARRAY_SIZE(cmd_tx));
 
 	// send initialize commands to display
-	ssd1306_send(dev, &cmd_array[0], ARRAY_SIZE(cmd_tx), SSD1306_DC_CMD);
+	if (ssd1306_send(dev, &cmd_array[0], ARRAY_SIZE(cmd_tx), SSD1306_DC_CMD))
+		return -1;
 
 	return 0;
 	}
@@ -137,40 +140,44 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 //----------------------------------------------------------------------------------------------------
 // send buffer to display
 //----------------------------------------------------------------------------------------------------
-void ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg)
+int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	// check limits
-	if (start_seg  > dev->oled_seg_max ) return;
+	if (start_seg  > dev->oled_seg_max ) return -1;
 	if (end_seg    > dev->oled_seg_max ) end_seg  = dev->oled_seg_max;
-	if (start_page > dev->oled_page_max) return;
+	if (start_page > dev->oled_page_max) return -1;
 	if (end_page   > dev->oled_page_max) end_page = dev->oled_page_max;
 
 	// set up display area
 	uint8_t ssd_cmd[] = {SSD1306_COLUMNADDR, start_seg, end_seg, SSD1306_PAGEADDR, start_page, end_page};
-	ssd1306_send(dev, &ssd_cmd[0], ARRAY_SIZE(ssd_cmd), SSD1306_DC_CMD);
+	if (ssd1306_send(dev, &ssd_cmd[0], ARRAY_SIZE(ssd_cmd), SSD1306_DC_CMD))
+		return -1;
 
 	// send data to display
 	size_t  size = (size_t)((end_seg - start_seg) + 1);
 	for (uint8_t i = start_page; i <= end_page; i++)
-		ssd1306_send(dev, &display_buffer.dim_two[i][start_seg], size, SSD1306_DC_DATA);
+		if (ssd1306_send(dev, &display_buffer.dim_two[i][start_seg], size, SSD1306_DC_DATA))
+			return -1;
+
+	return 0;
 	}
 
 //----------------------------------------------------------------------------------------------------
 // set pixel at x,y
 //----------------------------------------------------------------------------------------------------
-void ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value)
+int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	// check limits
 	if ((pixel_x > dev->oled_width) || (pixel_y > dev->oled_height))
-		return;
+		return -1;
 
 	// determine display page and create bit mask
 	uint8_t pixel_page = pixel_y / 8;
@@ -182,6 +189,8 @@ void ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t
 		display_buffer.dim_two[pixel_page][pixel_x] |= pixel_bit;
 	else
 		display_buffer.dim_two[pixel_page][pixel_x] &= (uint8_t)~pixel_bit;
+
+	return 0;
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -196,32 +205,35 @@ void ssd1306_clear_all(void)
 //----------------------------------------------------------------------------------------------------
 // set pixels in an area
 //----------------------------------------------------------------------------------------------------
-void ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value)
+int8_t ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	// check limits
-	if (start_x > dev->oled_width-1)  return;
+	if (start_x > dev->oled_width-1)  return -1;
 	if (end_x   > dev->oled_width-1)  end_x   = (uint8_t)(dev->oled_width-1);
-	if (start_y > dev->oled_height-1) return;
+	if (start_y > dev->oled_height-1) return -1;
 	if (end_y   > dev->oled_height-1) end_y   = (uint8_t)(dev->oled_height-1);
 
 	// set pixels
 	for (uint8_t y = start_y; y <= end_y; y++)
 		for (uint8_t x = start_x; x <= end_x; x++)
-			ssd1306_pixel_set(dev, x, y, pixel_value);
+			if (ssd1306_pixel_set(dev, x, y, pixel_value))
+				return -1;
+
+	return 0;
 	}
 
 //----------------------------------------------------------------------------------------------------
 // map bitmap into display buffer
 //----------------------------------------------------------------------------------------------------
-void ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y)
+int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	// loop through bitmap bytes
 	for (uint8_t x = 0; x < bitmap_seg_size; x++)
@@ -245,21 +257,23 @@ void ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, ui
 					break;
 
 				// set pixel from bit
-				ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(bitmap_byte & (1 << y)));
+				if (ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(bitmap_byte & (1 << y))))
+					return -1;
 				}
 			}
 		}
 
+	return 0;
 	}
 
 //----------------------------------------------------------------------------------------------------
 // map text into display buffer
 //----------------------------------------------------------------------------------------------------
-void ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font)
+int8_t ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t start_pixel_y, uint8_t font)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
-		return;
+		return -1;
 
 	const uint8_t *font_ptr;
 	uint8_t font_bytes;
@@ -291,12 +305,15 @@ void ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t sta
 		memcpy_P(&work[0], &font_ptr[font_index], font_bytes);
 
 		// bitmap font into buffer
-		ssd1306_bitmap(dev, &work[0], font_segs, font_pages, start_pixel_x, start_pixel_y);
+		if (ssd1306_bitmap(dev, &work[0], font_segs, font_pages, start_pixel_x, start_pixel_y))
+			return -1;
 
 		// increment to next character display position
 		start_pixel_x = (uint8_t)(start_pixel_x + font_segs);
 		if (start_pixel_x > (uint8_t)(dev->oled_width-1))
 			break;
 		}
+
+	return 0;
 	}
 
