@@ -14,7 +14,6 @@
 
 // display buffer array
 union ssd1306_buffer display_buffer = {{0}};
-size_t display_buffer_size = ARRAY_SIZE(display_buffer.dim_one);
 
 // array of default initialization commands
 const uint8_t PROGMEM cmd_tx[] = 
@@ -127,11 +126,11 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 	dev->valid_flag = DEV_VALID;
 
 	// copy command list from flash 
-	uint8_t cmd_array[ARRAY_SIZE(cmd_tx)];
-	memcpy_P(&cmd_array[0], &cmd_tx[0], ARRAY_SIZE(cmd_tx));
+	uint8_t cmd_array[sizeof cmd_tx];
+	memcpy_P(&cmd_array[0], &cmd_tx[0], sizeof cmd_array);
 
 	// send initialize commands to display
-	if (ssd1306_send(dev, &cmd_array[0], ARRAY_SIZE(cmd_tx), SSD1306_DC_CMD))
+	if (ssd1306_send(dev, &cmd_array[0], sizeof cmd_array, SSD1306_DC_CMD))
 		return -1;
 
 	return 0;
@@ -154,7 +153,7 @@ int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uin
 
 	// set up display area
 	uint8_t ssd_cmd[] = {SSD1306_COLUMNADDR, start_seg, end_seg, SSD1306_PAGEADDR, start_page, end_page};
-	if (ssd1306_send(dev, &ssd_cmd[0], ARRAY_SIZE(ssd_cmd), SSD1306_DC_CMD))
+	if (ssd1306_send(dev, &ssd_cmd[0], sizeof ssd_cmd, SSD1306_DC_CMD))
 		return -1;
 
 	// send data to display
@@ -199,7 +198,7 @@ int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8
 void ssd1306_clear_all(void)
 	{
 	// clear display
-	memset(&display_buffer.dim_one[0], 0x00, display_buffer_size);
+	memset(&display_buffer.dim_one[0], 0x00, sizeof display_buffer);
 	}
 
 //----------------------------------------------------------------------------------------------------

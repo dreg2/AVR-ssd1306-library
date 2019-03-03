@@ -48,7 +48,6 @@ union ssd1306_buffer
 	};
 
 extern union  ssd1306_buffer display_buffer;
-extern size_t display_buffer_size;
 
 
 // data/command select
