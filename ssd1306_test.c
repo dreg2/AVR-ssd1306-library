@@ -1,8 +1,8 @@
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <avr/pgmspace.h>
 
 #include "uart.h"
 #include "i2c.h"
@@ -35,7 +35,7 @@ int main(void)
 	ssd1306_t dev_i2c;
 	if (ssd1306_init(&dev_i2c, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_I2C, SSD1306_SLAVE_ADDR, PIN_NOT_USED, PIN_NOT_USED) < 0)
 		printf("i2c initialize failed\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	printf("ssd1306 i2c initialized\n");
 	option = getchar();
@@ -49,7 +49,7 @@ int main(void)
 	ssd1306_t dev_spi;
 	if (ssd1306_init(&dev_spi, SSD1306_OLED_WIDTH_128, SSD1306_OLED_HEIGHT_64, SSD1306_BUS_SPI, 0x00, PIN_B1_ARD, PIN_B0_ARD) < 0)
 		printf("spi initialize failed\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	printf("ssd1306 spi initialized\n");
 	option = getchar();
@@ -57,25 +57,25 @@ int main(void)
 
 	// display checkerboard pattern
 	printf("checkerboard\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	for (int i = 0; i < 8; i++)
 		for (int j = 0; j < 128; j++)
 			if (((i%2) && ((j%16)/8)) || (!(i%2) && !((j%16)/8)))
-				display_buffer.dim_two[i][j]  = 0xFF;
+				display_buffer[i][j]  = 0xFF;
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
 	// ascii char set 5x7
 	printf("\n5x7 char set\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	for (int i = 0; i < 128; i++)
 		{
 		int row_index  = (i / 16);
 		int col_index  = (i % 16) * 8;
 		int font_index = (i + 32) * 5; // start at space (32)
 
-		memcpy_P(&display_buffer.dim_two[row_index][col_index], &font5x7[font_index], 5);
+		memcpy_P(&display_buffer[row_index][col_index], &font5x7[font_index], 5);
 		}
 
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
@@ -85,15 +85,15 @@ int main(void)
 
 	// ascii char set 6x14
 	printf("\n6x14 char set\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	for (int i = 0; i < 64; i++)
 		{
 		int row_index  = (i / 16) * 2;
 		int col_index  = (i % 16) * 8;
 		int font_index = (i + 32) * 12; // start at space (32)
 
-		memcpy_P(&display_buffer.dim_two[row_index]  [col_index], &font6x14[font_index],   6);
-		memcpy_P(&display_buffer.dim_two[row_index+1][col_index], &font6x14[font_index+6], 6);
+		memcpy_P(&display_buffer[row_index]  [col_index], &font6x14[font_index],   6);
+		memcpy_P(&display_buffer[row_index+1][col_index], &font6x14[font_index+6], 6);
 		}
 
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
@@ -101,7 +101,7 @@ int main(void)
 	option = getchar();
 
 	printf("\npixel test\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	for (uint8_t i = 10; i < 54; i++)
@@ -124,25 +124,25 @@ int main(void)
 	printf("\nmap test\n");
 	for (int i = 0; i <= 7; i++)
 		{
-		display_buffer.dim_two  [i][0]   = 0xFF;
-		display_buffer.dim_two  [i][127] = 0xFF;
+		display_buffer[i][0]   = 0xFF;
+		display_buffer[i][127] = 0xFF;
 
 		if (i == 0)
 			for (int j = 1; j <= 126; j++)
-				display_buffer.dim_two  [i][j]  = 0x01;
+				display_buffer[i][j]  = 0x01;
 		if (i == 7)
 			for (int j = 1; j <= 126; j++)
-				display_buffer.dim_two  [i][j]  = 0x80;
+				display_buffer[i][j]  = 0x80;
 				
 		if (i >= 3 && i <= 4)
 			{
-			display_buffer.dim_two  [i][61]  = 0xFF;
-			display_buffer.dim_two  [i][62]  = 0x81;
-			display_buffer.dim_two  [i][63]  = 0x81;
-			display_buffer.dim_two  [i][64]  = 0x81;
-			display_buffer.dim_two  [i][65]  = 0x81;
-			display_buffer.dim_two  [i][66]  = 0x81;
-			display_buffer.dim_two  [i][67]  = 0xFF;
+			display_buffer[i][61]  = 0xFF;
+			display_buffer[i][62]  = 0x81;
+			display_buffer[i][63]  = 0x81;
+			display_buffer[i][64]  = 0x81;
+			display_buffer[i][65]  = 0x81;
+			display_buffer[i][66]  = 0x81;
+			display_buffer[i][67]  = 0xFF;
 			}
 		}
 
@@ -153,7 +153,7 @@ int main(void)
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 
 	printf("\nbitmap test 1\n");
 	ssd1306_bitmap(&dev_spi, bitmap_test[0], 8, 1, 10, 10);
@@ -165,7 +165,7 @@ int main(void)
 	option = getchar();
 
 	char text1[16];
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	printf("\ntext test 1\n");
 	snprintf(text1, 16, "Test 1.2.3.4.5.6.7.8");
 	ssd1306_text(&dev_i2c, text1,  0, 0, SSD1306_FONT_5X7);
@@ -183,14 +183,14 @@ int main(void)
 	option = getchar();
 
 	printf("\narea test\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	ssd1306_area_set(&dev_i2c, 32, 96, 16, 48, 1);
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
 	printf("\nend program\n");
-	ssd1306_clear_all();
+	ssd1306_clear_buffer();
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	return 0;

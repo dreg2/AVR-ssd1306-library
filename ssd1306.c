@@ -1,8 +1,8 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <util/delay.h>
 #include <stdio.h>
 #include <string.h>
-#include <util/delay.h>
 
 #include "uart.h"
 #include "i2c.h"
@@ -13,7 +13,8 @@
 #include "font6x14.h"
 
 // display buffer array
-union ssd1306_buffer display_buffer = {{0}};
+//union ssd1306_buffer display_buffer = {{0}};
+uint8_t display_buffer[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX] = {{0}}; // dim_two dimensional buffer (row x col)
 
 // array of default initialization commands
 const uint8_t PROGMEM cmd_tx[] = 
@@ -159,7 +160,7 @@ int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uin
 	// send data to display
 	size_t  size = (size_t)((end_seg - start_seg) + 1);
 	for (uint8_t i = start_page; i <= end_page; i++)
-		if (ssd1306_send(dev, &display_buffer.dim_two[i][start_seg], size, SSD1306_DC_DATA))
+		if (ssd1306_send(dev, &display_buffer[i][start_seg], size, SSD1306_DC_DATA))
 			return -1;
 
 	return 0;
@@ -185,9 +186,9 @@ int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8
 
 	// set bit on or off
 	if (pixel_value)
-		display_buffer.dim_two[pixel_page][pixel_x] |= pixel_bit;
+		display_buffer[pixel_page][pixel_x] |= pixel_bit;
 	else
-		display_buffer.dim_two[pixel_page][pixel_x] &= (uint8_t)~pixel_bit;
+		display_buffer[pixel_page][pixel_x] &= (uint8_t)~pixel_bit;
 
 	return 0;
 	}
@@ -195,10 +196,10 @@ int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8
 //----------------------------------------------------------------------------------------------------
 // clear entire buffer
 //----------------------------------------------------------------------------------------------------
-void ssd1306_clear_all(void)
+void ssd1306_clear_buffer(void)
 	{
 	// clear display
-	memset(&display_buffer.dim_one[0], 0x00, sizeof display_buffer);
+	memset(&display_buffer[0][0], 0x00, sizeof display_buffer);
 	}
 
 //----------------------------------------------------------------------------------------------------

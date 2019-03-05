@@ -3,7 +3,6 @@
 
 #include <avr/pgmspace.h>
 #include <stdint.h>
-#include <stddef.h>
 
 #include "pin.h"
 
@@ -26,7 +25,7 @@ extern const uint8_t PROGMEM font6x14[];
 #define DEV_VALID   0xFF
 #define DEV_INVALID 0xFE
 
-// display structure
+// display device structure
 typedef struct ssd1306
 	{
 	uint8_t valid_flag;
@@ -41,14 +40,7 @@ typedef struct ssd1306
 	} ssd1306_t;
 
 // display buffer array
-union ssd1306_buffer
-	{
-	uint8_t dim_one[(SSD1306_OLED_HEIGHT_MAX / 8) * SSD1306_OLED_WIDTH_MAX]; // dim_one dimensional buffer
-	uint8_t dim_two[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX]; // dim_two dimensional buffer (row x col)
-	};
-
-extern union  ssd1306_buffer display_buffer;
-
+extern uint8_t display_buffer[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX];
 
 // data/command select
 #define SSD1306_DC_CMD     0x00
@@ -63,7 +55,7 @@ int8_t ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, uint8_t addr, uint8_t reset_pin, uint8_t dc_pin);
 int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uint8_t start_seg, uint8_t end_seg);
 
-void   ssd1306_clear_all(void);
+void   ssd1306_clear_buffer(void);
 int8_t ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t end_y, uint8_t pixel_value);
 int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value);
 int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y);
