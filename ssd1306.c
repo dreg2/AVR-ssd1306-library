@@ -13,8 +13,7 @@
 #include "font6x14.h"
 
 // display buffer array
-//union ssd1306_buffer display_buffer = {{0}};
-uint8_t display_buffer[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX] = {{0}}; // dim_two dimensional buffer (row x col)
+uint8_t display_buffer[(SSD1306_OLED_HEIGHT_MAX / 8)] [SSD1306_OLED_WIDTH_MAX] = {{0}};
 
 // array of default initialization commands
 const uint8_t PROGMEM cmd_tx[] = 
@@ -167,6 +166,15 @@ int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uin
 	}
 
 //----------------------------------------------------------------------------------------------------
+// clear entire buffer
+//----------------------------------------------------------------------------------------------------
+void ssd1306_clear_buffer(void)
+	{
+	// clear display
+	memset(&display_buffer[0][0], 0x00, sizeof display_buffer);
+	}
+
+//----------------------------------------------------------------------------------------------------
 // set pixel at x,y
 //----------------------------------------------------------------------------------------------------
 int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8_t pixel_value)
@@ -191,15 +199,6 @@ int8_t ssd1306_pixel_set(ssd1306_t *dev, uint8_t pixel_x, uint8_t pixel_y, uint8
 		display_buffer[pixel_page][pixel_x] &= (uint8_t)~pixel_bit;
 
 	return 0;
-	}
-
-//----------------------------------------------------------------------------------------------------
-// clear entire buffer
-//----------------------------------------------------------------------------------------------------
-void ssd1306_clear_buffer(void)
-	{
-	// clear display
-	memset(&display_buffer[0][0], 0x00, sizeof display_buffer);
 	}
 
 //----------------------------------------------------------------------------------------------------
@@ -229,7 +228,8 @@ int8_t ssd1306_area_set(ssd1306_t *dev, uint8_t start_x, uint8_t end_x, uint8_t 
 //----------------------------------------------------------------------------------------------------
 // map bitmap into display buffer
 //----------------------------------------------------------------------------------------------------
-int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y)
+int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t *bitmap_mask,
+		uint8_t bitmap_seg_size, uint8_t bitmap_page_size, uint8_t start_pixel_x, uint8_t start_pixel_y)
 	{
 	// check for valid device
 	if (dev->valid_flag != DEV_VALID)
@@ -238,27 +238,32 @@ int8_t ssd1306_bitmap(ssd1306_t *dev, uint8_t *bitmap, uint8_t bitmap_seg_size, 
 	// loop through bitmap bytes
 	for (uint8_t x = 0; x < bitmap_seg_size; x++)
 		{
+		// calculate x-position
 		uint8_t x_pos = (uint8_t)(start_pixel_x + x);
-
 		if (x_pos > (uint8_t)(dev->oled_width-1))
 			break;
 
 		// loop through bitmap pages
 		for (uint8_t i = 0; i < bitmap_page_size; i++)
 			{
-			uint8_t bitmap_byte = bitmap[x + (i*bitmap_seg_size)];
+			// get bitmap and bitmap_mask bytes
+			uint8_t bitmap_byte      = bitmap[x + (i*bitmap_seg_size)];
+			uint8_t bitmap_mask_byte = 0xFF;
+			if (bitmap_mask != NULL)
+				bitmap_mask_byte = bitmap_mask[x + (i*bitmap_seg_size)];
 
 			// loop through bits
 			for (uint8_t y = 0; y < 8; y++)
 				{
+				// calculate y-position of bit
 				uint8_t y_pos = (uint8_t)(start_pixel_y + y + (i*8));
-
 				if (y_pos > dev->oled_height-1)
 					break;
 
-				// set pixel from bit
-				if (ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(bitmap_byte & (1 << y))))
-					return -1;
+				// if mask bit set, set pixel from bit
+				if ((bitmap_mask_byte & (1 << y)))
+					if (ssd1306_pixel_set(dev, x_pos, y_pos, (uint8_t)(bitmap_byte & (1 << y))))
+						return -1;
 				}
 			}
 		}
@@ -305,7 +310,7 @@ int8_t ssd1306_text(ssd1306_t *dev, char *text, uint8_t start_pixel_x, uint8_t s
 		memcpy_P(&work[0], &font_ptr[font_index], font_bytes);
 
 		// bitmap font into buffer
-		if (ssd1306_bitmap(dev, &work[0], font_segs, font_pages, start_pixel_x, start_pixel_y))
+		if (ssd1306_bitmap(dev, &work[0], &work[0], font_segs, font_pages, start_pixel_x, start_pixel_y))
 			return -1;
 
 		// increment to next character display position

@@ -11,11 +11,17 @@
 
 #define SSD1306_SLAVE_ADDR          0x3C
 
-uint8_t bitmap_test[][8] =
+uint8_t bitmap_test[][32] =
+	{
         {
-        {0x01, 0x07, 0x0F, 0x3F, 0x0F, 0x07, 0x01, 0x00},
-        {0x3F, 0x0F, 0x07, 0x01, 0x07, 0x0F, 0x3F, 0x00},
-        };
+	0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF, 0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF,
+        0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF, 0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF,
+	},
+        {
+	0x00, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x00, 0x00, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x00,
+        0x00, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x00, 0x00, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x00,
+	},
+	};
 
 
 int main(void)
@@ -100,6 +106,7 @@ int main(void)
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
+	// pixel set test
 	printf("\npixel test\n");
 	ssd1306_clear_buffer();
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
@@ -121,45 +128,18 @@ int main(void)
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
 
-	printf("\nmap test\n");
-	for (int i = 0; i <= 7; i++)
-		{
-		display_buffer[i][0]   = 0xFF;
-		display_buffer[i][127] = 0xFF;
-
-		if (i == 0)
-			for (int j = 1; j <= 126; j++)
-				display_buffer[i][j]  = 0x01;
-		if (i == 7)
-			for (int j = 1; j <= 126; j++)
-				display_buffer[i][j]  = 0x80;
-				
-		if (i >= 3 && i <= 4)
-			{
-			display_buffer[i][61]  = 0xFF;
-			display_buffer[i][62]  = 0x81;
-			display_buffer[i][63]  = 0x81;
-			display_buffer[i][64]  = 0x81;
-			display_buffer[i][65]  = 0x81;
-			display_buffer[i][66]  = 0x81;
-			display_buffer[i][67]  = 0xFF;
-			}
-		}
-
-	ssd1306_display(&dev_spi, 3, 4, 61, 67);
-	ssd1306_display(&dev_i2c, 3, 4, 61, 67);
-	option = getchar();
+	// bitmap test
+	printf("\nbitmap test 1\n");
+	ssd1306_clear_buffer();
+	ssd1306_bitmap(&dev_i2c, bitmap_test[0], bitmap_test[0], 16, 2, 64, 32);
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
-
-	ssd1306_clear_buffer();
-
-	printf("\nbitmap test 1\n");
-	ssd1306_bitmap(&dev_spi, bitmap_test[0], 8, 1, 10, 10);
-	ssd1306_bitmap(&dev_i2c, bitmap_test[0], 8, 1, 10, 10);
-	ssd1306_bitmap(&dev_spi, bitmap_test[1], 8, 1, 64, 32);
-	ssd1306_bitmap(&dev_i2c, bitmap_test[1], 8, 1, 64, 32);
+	ssd1306_bitmap(&dev_i2c, bitmap_test[1], bitmap_test[1], 16, 2, 64, 32);
+	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
+	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
+	option = getchar();
+	ssd1306_bitmap(&dev_i2c, bitmap_test[0], NULL, 16, 2, 64, 32);
 	ssd1306_display(&dev_spi, 0, dev_spi.oled_page_max, 0, dev_spi.oled_seg_max);
 	ssd1306_display(&dev_i2c, 0, dev_i2c.oled_page_max, 0, dev_i2c.oled_seg_max);
 	option = getchar();
