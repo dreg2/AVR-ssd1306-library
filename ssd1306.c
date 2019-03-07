@@ -68,8 +68,15 @@ int8_t ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 		}
 	else
 		{
+		// set D/C byte
+		uint8_t dc_byte;
+		if (dc_flag == SSD1306_DC_DATA)
+			dc_byte = 0x40;
+		else
+			dc_byte = 0x00;
+
 		// send via i2c bus
-		i2c_master_write(dev->i2c_addr, &dc_flag, 1, I2C_SEQ_START); // send D/C byte
+		i2c_master_write(dev->i2c_addr, &dc_byte, 1, I2C_SEQ_START); // send D/C byte
 		i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
 		}
 
@@ -112,7 +119,7 @@ int8_t ssd1306_init(ssd1306_t *dev, uint8_t width, uint8_t height, uint8_t bus, 
 	// reset ssd1306
 	if (dev->reset_pin.valid_flag == PIN_VALID)
 		{
-		// pull reset low, wait 100 ms, pull reset high
+		// pull reset low, wait 100 us, pull reset high
 		pin_state_set(&dev->reset_pin, PIN_OUT_LOW);
 		_delay_us(100);                // delay 100 us
 		pin_state_set(&dev->reset_pin, PIN_OUT_HIGH);
@@ -152,7 +159,7 @@ int8_t ssd1306_display(ssd1306_t *dev, uint8_t start_page, uint8_t end_page, uin
 	if (end_page   > dev->oled_page_max) end_page = dev->oled_page_max;
 
 	// set up display area
-	uint8_t ssd_cmd[] = {SSD1306_COLUMNADDR, start_seg, end_seg, SSD1306_PAGEADDR, start_page, end_page};
+	uint8_t ssd_cmd[] = {SSD1306_PAGEADDR, start_page, end_page, SSD1306_COLUMNADDR, start_seg, end_seg};
 	if (ssd1306_send(dev, &ssd_cmd[0], sizeof ssd_cmd, SSD1306_DC_CMD))
 		return -1;
 
