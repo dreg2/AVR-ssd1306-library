@@ -5,8 +5,19 @@
 #include <string.h>
 
 #include "uart.h"
+
+#if !defined (SSD1306_I2C) && !defined (SSD1306_SPI)
+        #define SSD1306_I2C
+#endif
+
+#ifdef SSD1306_I2C
 #include "i2c.h"
+#endif
+
+#ifdef SSD1306_SPI
 #include "spi.h"
+#endif
+
 #include "ssd1306.h"
 
 #include "font5x7.h"
@@ -53,31 +64,44 @@ int8_t ssd1306_send(ssd1306_t *dev, uint8_t *data, size_t size, uint8_t dc_flag)
 	if (dev->valid_flag != DEV_VALID)
 		return -1;
 
-	if (dev->bus_type == SSD1306_BUS_SPI)
+	switch (dev->bus_type)
 		{
-		// D/C pin required for spi
-		if (dev->dc_pin.valid_flag != PIN_VALID)
+#ifdef SSD1306_I2C
+		case SSD1306_BUS_I2C:
+			{
+			// set D/C byte
+			uint8_t dc_byte;
+			if (dc_flag == SSD1306_DC_DATA)
+				dc_byte = 0x40;
+			else
+				dc_byte = 0x00;
+
+			// send via i2c bus
+			i2c_master_write(dev->i2c_addr, &dc_byte, 1, I2C_SEQ_START); // send D/C byte
+			i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
+			break;
+			}
+#endif
+
+#ifdef SSD1306_SPI
+		case SSD1306_BUS_SPI:
+			{
+			// set D/C pin
+			if (dev->dc_pin.valid_flag != PIN_VALID)
+				return -1;
+			if (dc_flag == SSD1306_DC_DATA)
+				pin_state_set(&dev->dc_pin, PIN_OUT_HIGH);                         // data - set D/C pin
+			else
+				pin_state_set(&dev->dc_pin, PIN_OUT_LOW);                          // command - clear D/C pin
+
+			// send via spi bus
+			spi_write(data, size);
+			break;
+			}
+#endif
+
+		default:
 			return -1;
-
-		// send via spi bus
-		if (dc_flag == SSD1306_DC_DATA)
-			pin_state_set(&dev->dc_pin, PIN_OUT_HIGH);                         // data - set D/C pin
-		else
-			pin_state_set(&dev->dc_pin, PIN_OUT_LOW);                          // command - clear D/C pin
-		spi_write(data, size);
-		}
-	else
-		{
-		// set D/C byte
-		uint8_t dc_byte;
-		if (dc_flag == SSD1306_DC_DATA)
-			dc_byte = 0x40;
-		else
-			dc_byte = 0x00;
-
-		// send via i2c bus
-		i2c_master_write(dev->i2c_addr, &dc_byte, 1, I2C_SEQ_START); // send D/C byte
-		i2c_master_write(dev->i2c_addr, data, size, I2C_SEQ_STOP);   // send data bytes
 		}
 
 	return 0;
